@@ -1,21 +1,7 @@
 #!/bin/bash
-#version 0.95-1-N/HS
-
-#You may share this script on the condition a reference to RaspberryConnect.com 
-#must be included in copies or derivatives of this script. 
-
-#Network Wifi & Hotspot with Internet
-#A script to switch between a wifi network and an NON Internet routed Hotspot
-#For use with a Raspberry Pi zero W or Zero with usb wifi dongle. 
-#Also for any Raspberry Pi where an internet routed hotspot is not required.
-#Works at startup or with a seperate timer or manually without a reboot
-#Other setup required find out more at
-#http://www.raspberryconnect.com
-
 echo "$(date): AutoHotspot starting"
 
-wifidev="wlan0" #device name to use. Default is wlan0.
-#use the command: iw dev ,to see wifi interface name 
+wifidev="wlan0"
 
 IFSdef=$IFS
 # These four lines capture the wifi networks the RPi is setup to use
@@ -50,7 +36,7 @@ createAdHocNetwork()
 
 KillHotspot()
 {
-    echo "Shutting Down Hotspot"
+    echo "Shutting Down"
     ip link set dev "$wifidev" down
     systemctl stop hostapd
     systemctl stop dnsmasq
@@ -60,11 +46,11 @@ KillHotspot()
 
 ChkWifiUp()
 {
-  echo "Checking WiFi connection ok"
+  echo "Checking connection"
   sleep 15 #give time for connection to be completed to router
   if ! /sbin/wpa_cli -i "$wifidev" status | grep 'ip_address' >/dev/null 2>&1
     then #Failed to connect to wifi (check your wifi settings, password etc)
-        echo 'Wifi failed to connect, falling back to Hotspot.'
+        echo 'Error'
         /usr/sbin/service wpa_supplicant@$wifidev stop
         createAdHocNetwork
         # Create a failed timestamp that will be checked against the timestamp of wpa_supplicant-$wifidev.conf
@@ -129,14 +115,14 @@ then
        if systemctl status hostapd | grep "(running)" >/dev/null 2>&1
        then #hotspot running and ssid in range
               KillHotspot
-              echo "Hotspot Deactivated, Bringing Wifi Up"
+              echo "Deactivated"
               /usr/sbin/service wpa_supplicant@$wifidev start
               ChkWifiUp
        elif { /sbin/wpa_cli -i "$wifidev" status | grep 'ip_address'; } >/dev/null 2>&1
        then #Already connected
-              echo "Wifi already connected to a network"
+              echo "Already connected"
        else #ssid exists and no hotspot running connect to wifi network
-              echo "Connecting to the WiFi Network"
+              echo "Connecting"
               /usr/sbin/service wpa_supplicant@$wifidev start
               ChkWifiUp
        fi
